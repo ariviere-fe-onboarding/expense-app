@@ -1,0 +1,16 @@
+id: no-direct-environ
+language: python
+severity: error
+message: >-
+  Observation: application code reads the process environment directly. Fernway's
+  Python configuration guideline requires every value to come through get_config() so it
+  is validated once at startup and can be mocked in tests.
+note: Allowed only in the service's config module.
+rule:
+  any:
+    - pattern: os.environ
+    - pattern: os.getenv($$$)
+    - pattern: environ.get($$$)
+ignores:
+  - "**/config.py"
+  - "tests/**"

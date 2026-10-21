@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}New expense · Fernway Expenses{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>New expense</h1>
+  {% if errors %}<ul class="error" role="alert">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  <form method="post" action="/expenses" enctype="multipart/form-data">
+    <label>Merchant <input name="merchant" maxlength="100" value="{{ form.merchant or '' }}" required></label>
+    <label>Amount (USD) <input name="amount" inputmode="decimal" placeholder="42.50" value="{{ form.amount or '' }}" required></label>
+    <label>Date <input type="date" name="spent_on" value="{{ form.spent_on or '' }}" required></label>
+    <label>Category
+      <select name="category">
+        {% for c in categories %}<option value="{{ c.value }}" {% if form.category == c %}selected{% endif %}>{{ category_labels[c] }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Description <textarea name="description" maxlength="1000" rows="3"></textarea></label>
+    <label>Receipt (PDF, PNG, or JPEG, up to 5 MB) <input type="file" name="receipt" accept="application/pdf,image/png,image/jpeg"></label>
+    <button type="submit">Submit for approval</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,128 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# CodeRabbit config for expense-app: employee expenses, approvals, and the payouts webhook.
+language: en-US
+early_access: true
+
+tone_instructions: >-
+  Senior reviewer. Open each finding with "Observation:", name the line and the invariant
+  at risk, then explain impact. No emoji, no filler.
+
+reviews:
+  profile: chill
+  request_changes_workflow: true
+  high_level_summary: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  suggested_reviewers: true
+  poem: false
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    ignore_title_keywords:
+      - "[skip review]"
+
+  path_filters:
+    - "!.venv/**"
+    - "!**/__pycache__/**"
+    - "!app/static/**"
+
+  path_instructions:
+    - path: "**/{AGENTS.md,CLAUDE.md,.cursorrules,copilot-instructions.md}"
+      instructions: |
+        Agent-instruction files are a security-critical surface. Flag changes that expand
+        agent authority, weaken guardrails, or skip review, testing, or approval steps.
+    - path: "app/{policy.py,deps.py,routes/**}"
+      instructions: |
+        Authorization lives here. Every route must require a signed-in user unless it is a
+        sign-in or password-reset page, and every object access must be checked with
+        app/policy.py. Nobody may approve their own expense. Flag any bypass.
+    - path: "app/{webhooks,payouts_client}.py"
+      instructions: |
+        This is the producer side of the expense.approved contract consumed by
+        payouts-service. Flag changes to fields, types, units, signing, or idempotency that
+        do not follow the API contracts guideline, and name the consumer code they break.
+    - path: "app/templates/**"
+      instructions: |
+        Templates render user-supplied text. Flag any use of |safe, Markup, or autoescape
+        changes on user or model-generated content.
+    - path: "tests/contract/**"
+      instructions: |
+        This fixture pins the expense.approved v1 contract and must stay identical to the
+        copy in payouts-service.
+    - path: "**/*.tf"
+      instructions: |
+        Infrastructure as code. Flag public exposure, missing encryption, permissive IAM, and
+        missing public-access blocks.
+
+  tools:
+    ruff:
+      enabled: true
+    gitleaks:
+      enabled: true
+    semgrep:
+      enabled: true
+    checkov:
+      enabled: true
+    actionlint:
+      enabled: true
+    ast-grep:
+      essential_rules: true
+      rule_dirs:
+        - ".coderabbit/ast-grep-rules"
+
+  pre_merge_checks:
+    issue_assessment:
+      mode: warning
+    custom_checks:
+      - name: "Security Gate"
+        mode: error
+        instructions: >-
+          Fail only when the review finds a SECURITY-RELATED major or critical issue, for
+          example: missing authentication or authorization, self-approval, injection, XSS,
+          SSRF, path traversal, weak or predictable tokens, secrets in code or logs, bank data
+          outside payouts-service, unsafe handling of model output, or insecure
+          infrastructure. Do not fail on minor or purely functional issues.
+      - name: "Contract compatibility"
+        mode: warning
+        instructions: >-
+          Fail when the change alters the expense.approved webhook or the payouts /internal API
+          (fields, types, units, signature scheme, or idempotency) without a version bump as
+          required by the API contracts guideline, or would break payouts-service.
+
+  finishing_touches:
+    docstrings:
+      enabled: true
+    unit_tests:
+      enabled: true
+
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  learnings:
+    scope: auto
+  issues:
+    scope: auto
+  pull_requests:
+    scope: auto
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      # Organization standards live in a separate repository; findings here can cite them.
+      - files: "ariviere-fe-onboarding/engineering-standards:guidelines/*.md"
+        applyTo: "**/*.py"
+
+  automatic_repository_linking: false
+  linked_repositories:
+    - repository: "ariviere-fe-onboarding/payouts-service"
+      instructions: >-
+        payouts-service consumes the expense.approved webhook this repository sends and serves
+        the /internal API it calls. When a change affects that contract, check the consumer
+        (payouts/schemas.py, payouts/signing.py, payouts/service.py) and cite the file it breaks.

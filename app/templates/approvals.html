@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Approvals · Fernway Expenses{% endblock %}
+{% block content %}
+<h1>Waiting on you</h1>
+{% if expenses %}
+<table class="card">
+  <thead><tr><th>Submitted by</th><th>Merchant</th><th>Date</th><th class="num">Amount</th></tr></thead>
+  <tbody>
+  {% for e in expenses %}
+    <tr>
+      <td>{{ e.submitter.name }}</td>
+      <td><a href="/expenses/{{ e.id }}">{{ e.merchant }}</a></td>
+      <td>{{ e.spent_on.isoformat() }}</td>
+      <td class="num">{{ e.amount_cents|cents(e.currency) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="card">Nothing waiting on you.</p>
+{% endif %}
+{% if user.role.value == "manager" %}<p class="muted">You give final approval up to $500.00. Larger expenses go to Finance after you approve.</p>{% endif %}
+{% endblock %}

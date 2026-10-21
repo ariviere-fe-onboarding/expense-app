@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ expense.merchant }} · Fernway Expenses{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="heading-row">
+    <h1>{{ expense.merchant }}</h1>
+    <span class="pill {{ expense.status.value }}">{{ status_labels[expense.status] }}</span>
+  </div>
+  <dl class="facts">
+    <dt>Amount</dt><dd>{{ expense.amount_cents|cents(expense.currency) }}</dd>
+    <dt>Date</dt><dd>{{ expense.spent_on.isoformat() }}</dd>
+    <dt>Category</dt><dd>{{ category_labels[expense.category] }}</dd>
+    <dt>Submitted by</dt><dd>{{ expense.submitter.name }} ({{ expense.submitter.team }})</dd>
+    <dt>Receipt</dt><dd>{% if expense.receipt_file %}<a href="/expenses/{{ expense.id }}/receipt">Download</a>{% else %}None attached{% endif %}</dd>
+    {% if expense.status.value == "approved" %}
+    <dt>Reimbursement</dt>
+    <dd>
+      {% if payout_error %}Payout status is unavailable right now.
+      {% elif payout %}{{ payout.status|replace("_", " ")|capitalize }} · {{ payout.amount_cents|cents(payout.currency) }}
+      {% else %}Not yet sent to payouts.{% endif %}
+    </dd>
+    {% endif %}
+  </dl>
+  {% if expense.description %}<h2>Description</h2><p class="prewrap">{{ expense.description }}</p>{% endif %}
+</section>
+
+{% if expense.approvals %}
+<section class="card">
+  <h2>History</h2>
+  <ol class="history">
+  {% for a in expense.approvals %}
+    <li><strong>{{ a.approver.name }}</strong> {{ "approved" if a.decision == "approve" else "rejected" }} on {{ a.created_at.date().isoformat() }}{% if a.comment %}: <q>{{ a.comment }}</q>{% endif %}</li>
+  {% endfor %}
+  </ol>
+</section>
+{% endif %}
+
+{% if can_decide %}
+<section class="card">
+  <h2>Your decision</h2>
+  <form method="post" action="/expenses/{{ expense.id }}/decision">
+    <label>Comment (optional) <input name="comment" maxlength="500"></label>
+    <div class="actions">
+      <button type="submit" name="decision" value="approve">Approve</button>
+      <button type="submit" name="decision" value="reject" class="secondary">Reject</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

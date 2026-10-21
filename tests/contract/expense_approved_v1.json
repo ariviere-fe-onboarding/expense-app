@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "event_id": "evt-6f1c2a9e",
+  "type": "expense.approved",
+  "occurred_at": "2026-10-01T15:30:00Z",
+  "data": {
+    "expense_id": 42,
+    "employee_id": "emp-priya",
+    "amount_cents": 18450,
+    "currency": "USD",
+    "approved_by": "emp-dana"
+  }
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Fernway Expenses{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">Fernway <span>Expenses</span></a>
+    {% if user %}
+    <nav aria-label="Main">
+      <a href="/">My expenses</a>
+      {% if user.role.value in ("manager", "finance") %}<a href="/approvals">Approvals</a>{% endif %}
+      <a href="/profile">Profile</a>
+      <form method="post" action="/logout"><button class="link" type="submit">Sign out</button></form>
+    </nav>
+    <p class="whoami">{{ user.name }} · {{ user.team }} · {{ user.role.value|title }}</p>
+    {% endif %}
+  </header>
+  <main>
+    {% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
