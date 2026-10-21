@@ -10,6 +10,7 @@
     <label>Date <input type="date" name="spent_on" value="{{ form.spent_on or '' }}" required></label>
     <label>Category
       <select name="category">
+        {% if can_suggest %}<option value="auto" {% if form.category == "auto" %}selected{% endif %}>Suggest for me</option>{% endif %}
         {% for c in categories %}<option value="{{ c.value }}" {% if form.category == c %}selected{% endif %}>{{ category_labels[c] }}</option>{% endfor %}
       </select>
     </label>
