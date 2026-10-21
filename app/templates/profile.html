@@ -17,4 +17,26 @@
   </dl>
   <p class="muted">Bank details are managed by the Finance Platform team and never stored in this app.</p>
 </section>
+
+{% if user.role.value == "manager" %}
+<section class="card narrow">
+  <h2>Away from work</h2>
+  {% if delegation %}
+  <p>{{ delegation.delegate.name }} covers your approvals from {{ delegation.starts_on.isoformat() }} through {{ delegation.ends_on.isoformat() }}.</p>
+  <form method="post" action="/profile/delegation/clear"><button type="submit" class="secondary">Remove delegation</button></form>
+  {% else %}
+  <p class="muted">Choose a manager to approve your team's expenses while you're away.</p>
+  <form method="post" action="/profile/delegation">
+    <label>Delegate
+      <select name="delegate_id">
+        {% for m in delegates %}<option value="{{ m.id }}">{{ m.name }} ({{ m.team }})</option>{% endfor %}
+      </select>
+    </label>
+    <label>First day away <input type="date" name="starts_on" required></label>
+    <label>Last day away <input type="date" name="ends_on" required></label>
+    <button type="submit">Delegate approvals</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}

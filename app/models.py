@@ -100,6 +100,20 @@ class Approval(Base):
     approver: Mapped[User] = relationship()
 
 
+class Delegation(Base):
+    """A manager's approvals handed to another manager while they are away."""
+
+    __tablename__ = "delegations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    manager_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True)
+    delegate_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    starts_on: Mapped[date] = mapped_column(Date)
+    ends_on: Mapped[date] = mapped_column(Date)
+
+    delegate: Mapped[User] = relationship(foreign_keys=[delegate_id])
+
+
 class UserSession(Base):
     """A login session. Only the SHA-256 of the cookie token is stored."""
 
