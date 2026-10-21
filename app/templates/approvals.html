@@ -19,5 +19,15 @@
 {% else %}
 <p class="card">Nothing waiting on you.</p>
 {% endif %}
+{% if user.role.value == "finance" %}
+<section class="card">
+  <h2>Reconciliation export</h2>
+  <form method="get" action="/finance/export" class="inline-form">
+    <label>From <input type="date" name="start" required></label>
+    <label>Through <input type="date" name="end" required></label>
+    <button type="submit">Download CSV</button>
+  </form>
+</section>
+{% endif %}
 {% if user.role.value == "manager" %}<p class="muted">You give final approval up to $500.00. Larger expenses go to Finance after you approve.</p>{% endif %}
 {% endblock %}
