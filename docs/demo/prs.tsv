@@ -1,1 +1,5 @@
 # name	title	body_file
+multi-currency	Support expenses in EUR, GBP, and CAD	docs/demo/prs/multi-currency.md
+approval-delegation	Let managers delegate approvals while on vacation	docs/demo/prs/approval-delegation.md
+finance-export	CSV export of approved expenses for Finance	docs/demo/prs/finance-export.md
+ai-categorizer	Suggest an expense category with Claude	docs/demo/prs/ai-categorizer.md
