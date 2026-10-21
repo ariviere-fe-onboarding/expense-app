@@ -2,9 +2,10 @@ id: http-call-needs-timeout
 language: python
 severity: error
 message: >-
-  Observation: outbound HTTP call without an explicit timeout. A slow or unresponsive
-  peer will hold this worker indefinitely. Fernway's security guideline requires a
-  timeout on every outbound request.
+  Observation: outbound HTTP call without an explicit timeout. It relies on the
+  library default (none for requests, 5 seconds for httpx) instead of a limit chosen for
+  this call. Fernway's security guideline requires an explicit timeout on every outbound
+  request.
 rule:
   all:
     - pattern: $CLIENT.$METHOD($$$ARGS)
