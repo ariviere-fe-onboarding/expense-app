@@ -14,7 +14,7 @@
       <td>{{ e.spent_on.isoformat() }}</td>
       <td><a href="/expenses/{{ e.id }}">{{ e.merchant }}</a></td>
       <td>{{ category_labels[e.category] }}</td>
-      <td class="num">{{ e.amount_cents|cents(e.currency) }}</td>
+      <td class="num">{{ e.amount_cents|cents(e.currency) }}{% if e.currency != "USD" %}<br><span class="muted">≈ {{ e|usd }}</span>{% endif %}</td>
       <td><span class="pill {{ e.status.value }}">{{ status_labels[e.status] }}</span></td>
     </tr>
   {% endfor %}

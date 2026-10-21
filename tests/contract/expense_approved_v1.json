@@ -6,7 +6,7 @@
   "data": {
     "expense_id": 42,
     "employee_id": "emp-priya",
-    "amount_cents": 18450,
+    "amount": 184.5,
     "currency": "USD",
     "approved_by": "emp-dana"
   }

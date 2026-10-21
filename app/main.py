@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 from app.config import Config, get_config
 from app.db import Base, make_engine, make_session_factory
 from app.deps import LoginRequired
+from app.fx import to_usd
 from app.models import Category, ExpenseStatus
 from app.money import format_cents
 from app.payouts_client import PayoutsClient
@@ -45,6 +46,7 @@ def build_templates() -> Jinja2Templates:
     """Create the template renderer with autoescaping and display filters."""
     templates = Jinja2Templates(directory=PACKAGE_DIR / "templates")
     templates.env.filters["cents"] = format_cents
+    templates.env.filters["usd"] = lambda e: f"${to_usd(e.amount_cents, e.currency):,.2f}"
     templates.env.globals["status_labels"] = STATUS_LABELS
     templates.env.globals["category_labels"] = {c: c.value.title() for c in Category}
     return templates

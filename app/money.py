@@ -5,6 +5,7 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 
 MAX_EXPENSE_CENTS = 1_000_000
+CURRENCY_SYMBOLS = {"USD": "$", "EUR": "€", "GBP": "£", "CAD": "CA$"}
 
 
 class AmountError(ValueError):
@@ -31,7 +32,7 @@ def parse_amount(text: str) -> int:
 
 def format_cents(cents: int, currency: str = "USD") -> str:
     """Render integer cents as '$1,234.50'."""
-    symbol = "$" if currency == "USD" else f"{currency} "
+    symbol = CURRENCY_SYMBOLS.get(currency, f"{currency} ")
     sign = "-" if cents < 0 else ""
     whole, fraction = divmod(abs(cents), 100)
     return f"{sign}{symbol}{whole:,}.{fraction:02d}"

@@ -6,7 +6,14 @@
   {% if errors %}<ul class="error" role="alert">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
   <form method="post" action="/expenses" enctype="multipart/form-data">
     <label>Merchant <input name="merchant" maxlength="100" value="{{ form.merchant or '' }}" required></label>
-    <label>Amount (USD) <input name="amount" inputmode="decimal" placeholder="42.50" value="{{ form.amount or '' }}" required></label>
+    <div class="amount-row">
+      <label>Amount <input name="amount" inputmode="decimal" placeholder="42.50" value="{{ form.amount or '' }}" required></label>
+      <label>Currency
+        <select name="currency">
+          {% for c in currencies %}<option value="{{ c }}" {% if form.currency == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
     <label>Date <input type="date" name="spent_on" value="{{ form.spent_on or '' }}" required></label>
     <label>Category
       <select name="category">

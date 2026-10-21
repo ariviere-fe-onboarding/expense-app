@@ -74,7 +74,7 @@ class FakePayouts:
         self.payouts[data["expense_id"]] = {
             "payout_id": len(self.webhooks),
             "status": "submitted",
-            "amount_cents": data["amount_cents"],
+            "amount_cents": round(data["amount"] * 100),
             "currency": data["currency"],
         }
         return httpx.Response(202, json={"payout_id": len(self.webhooks), "status": "submitted"})
