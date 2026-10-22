@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse, RedirectResponse, Response
@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from app import policy
 from app.deps import AppConfig, CurrentUser, DbSession, Payouts, Templates
+from app.fx import SUPPORTED_CURRENCIES
 from app.models import Category, Expense, ExpenseStatus
 from app.money import AmountError, parse_amount
 from app.payouts_client import PayoutsUnavailable
@@ -54,7 +55,14 @@ def my_expenses(
 def new_expense_form(request: Request, templates: Templates, user: CurrentUser) -> Response:
     """Show the expense form."""
     return templates.TemplateResponse(
-        request, "expense_new.html", {"user": user, "categories": list(Category), "form": {}}
+        request,
+        "expense_new.html",
+        {
+            "user": user,
+            "categories": list(Category),
+            "currencies": SUPPORTED_CURRENCIES,
+            "form": {},
+        },
     )
 
 
@@ -69,11 +77,18 @@ async def create_expense(
     amount: Annotated[str, Form(max_length=20)],
     spent_on: Annotated[date, Form()],
     category: Annotated[Category, Form()],
+    currency: Annotated[Literal["USD", "EUR", "GBP", "CAD"], Form()] = "USD",
     description: Annotated[str, Form(max_length=1000)] = "",
     receipt: Annotated[UploadFile | None, File()] = None,
 ) -> Response:
     """Validate and submit an expense with an optional receipt."""
-    form = {"merchant": merchant, "amount": amount, "spent_on": spent_on, "category": category}
+    form = {
+        "merchant": merchant,
+        "amount": amount,
+        "currency": currency,
+        "spent_on": spent_on,
+        "category": category,
+    }
     errors: list[str] = []
     amount_cents = 0
     try:
@@ -95,7 +110,13 @@ async def create_expense(
         return templates.TemplateResponse(
             request,
             "expense_new.html",
-            {"user": user, "categories": list(Category), "form": form, "errors": errors},
+            {
+                "user": user,
+                "categories": list(Category),
+                "currencies": SUPPORTED_CURRENCIES,
+                "form": form,
+                "errors": errors,
+            },
             status_code=400,
         )
 
@@ -105,6 +126,7 @@ async def create_expense(
         description=description.strip(),
         category=category,
         amount_cents=amount_cents,
+        currency=currency,
         spent_on=spent_on,
         status=policy.initial_status(user),
         receipt_file=stored[0] if stored else None,

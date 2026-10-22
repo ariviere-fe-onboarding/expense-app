@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Config
 from app.models import Expense
-from tests.conftest import expense_id, login, sessions
+from tests.conftest import FakePayouts, expense_id, login, sessions
 
 PDF = b"%PDF-1.7\n% synthetic receipt\n"
 
@@ -162,3 +162,27 @@ def test_missing_receipt_is_404(client: TestClient, tmp_path: Path) -> None:
     login(client, "emp-priya")
     hotel = expense_id(client, "Harborview Hotel")
     assert client.get(f"/expenses/{hotel}/receipt").status_code == 404
+
+
+def test_submit_foreign_currency_expense(client: TestClient) -> None:
+    login(client, "emp-priya")
+    response = submit(client, amount="85.00", currency="EUR")
+    page = client.get(response.headers["location"]).text
+    assert "€85.00" in page
+    assert "≈ $91.80" in page
+
+
+def test_foreign_expense_pays_usd(client: TestClient, fake_payouts: FakePayouts) -> None:
+    login(client, "emp-priya")
+    submit(client, merchant="Café Lumière", amount="40.00", currency="EUR")
+    login(client, "emp-marcus")
+    client.post(
+        f"/expenses/{expense_id(client, 'Café Lumière')}/decision", data={"decision": "approve"}
+    )
+    assert fake_payouts.webhooks[0]["data"]["amount"] == 43.2
+    assert fake_payouts.webhooks[0]["data"]["currency"] == "USD"
+
+
+def test_unsupported_currency_is_rejected(client: TestClient) -> None:
+    login(client, "emp-priya")
+    assert submit(client, currency="JPY").status_code == 422

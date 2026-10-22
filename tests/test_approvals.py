@@ -128,7 +128,7 @@ def test_webhook_matches_pinned_contract(client: TestClient, fake_payouts: FakeP
         assert sent[key] == pinned[key]
     for key, value in pinned["data"].items():
         assert type(sent["data"][key]) is type(value), key
-    assert sent["data"]["amount_cents"] == 18_450
+    assert sent["data"]["amount"] == 184.5
     assert sent["data"]["employee_id"] == "emp-jonah"
 
 
