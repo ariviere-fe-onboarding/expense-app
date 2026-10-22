@@ -11,7 +11,13 @@
     <dt>Date</dt><dd>{{ expense.spent_on.isoformat() }}</dd>
     <dt>Category</dt><dd>{{ category_labels[expense.category] }}</dd>
     <dt>Submitted by</dt><dd>{{ expense.submitter.name }} ({{ expense.submitter.team }})</dd>
-    <dt>Receipt</dt><dd>{% if expense.receipt_file %}<a href="/expenses/{{ expense.id }}/receipt">Download</a>{% else %}None attached{% endif %}</dd>
+    <dt>Receipt</dt>
+    <dd>
+      {% if expense.receipt_file %}
+      <a href="/expenses/{{ expense.id }}/receipt/preview" target="_blank" rel="noopener noreferrer">Preview</a>
+      · <a href="/expenses/{{ expense.id }}/receipt">Download</a>
+      {% else %}None attached{% endif %}
+    </dd>
     {% if expense.status.value == "approved" %}
     <dt>Reimbursement</dt>
     <dd>
