@@ -5,12 +5,13 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy import select
 
 from app import policy
 from app.deps import AppConfig, CurrentUser, DbSession, Payouts, Templates
+from app.expense_search import search_expenses
 from app.models import Category, Expense, ExpenseStatus
 from app.money import AmountError, parse_amount
 from app.payouts_client import PayoutsUnavailable
@@ -35,18 +36,28 @@ def visible_expense(session: DbSession, user: CurrentUser, expense_id: int) -> E
 
 @router.get("/")
 def my_expenses(
-    request: Request, templates: Templates, session: DbSession, user: CurrentUser, notice: str = ""
+    request: Request,
+    templates: Templates,
+    session: DbSession,
+    user: CurrentUser,
+    notice: str = "",
+    q: Annotated[str, Query(max_length=200)] = "",
 ) -> Response:
     """List the signed-in user's own expenses."""
-    expenses = session.scalars(
-        select(Expense)
-        .where(Expense.submitter_id == user.id)
-        .order_by(Expense.spent_on.desc(), Expense.id.desc())
-    ).all()
+    if q:
+        expenses = search_expenses(session, user.id, q)
+    else:
+        expenses = list(
+            session.scalars(
+                select(Expense)
+                .where(Expense.submitter_id == user.id)
+                .order_by(Expense.spent_on.desc(), Expense.id.desc())
+            ).all()
+        )
     return templates.TemplateResponse(
         request,
         "expenses.html",
-        {"user": user, "expenses": expenses, "notice": NOTICES.get(notice)},
+        {"user": user, "expenses": expenses, "notice": NOTICES.get(notice), "query": q},
     )
 
 
