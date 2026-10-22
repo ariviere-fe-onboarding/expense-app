@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy import select
 
 from app import policy
+from app.categorizer import Categorizer
 from app.deps import AppConfig, CurrentUser, DbSession, Payouts, Templates
 from app.models import Category, Expense, ExpenseStatus
 from app.money import AmountError, parse_amount
@@ -33,6 +34,12 @@ def visible_expense(session: DbSession, user: CurrentUser, expense_id: int) -> E
     return expense
 
 
+def categorizer(request: Request) -> Categorizer | None:
+    """Return the category suggester, or None when no API key is configured."""
+    suggester: Categorizer | None = request.app.state.categorizer
+    return suggester
+
+
 @router.get("/")
 def my_expenses(
     request: Request, templates: Templates, session: DbSession, user: CurrentUser, notice: str = ""
@@ -54,7 +61,14 @@ def my_expenses(
 def new_expense_form(request: Request, templates: Templates, user: CurrentUser) -> Response:
     """Show the expense form."""
     return templates.TemplateResponse(
-        request, "expense_new.html", {"user": user, "categories": list(Category), "form": {}}
+        request,
+        "expense_new.html",
+        {
+            "user": user,
+            "categories": list(Category),
+            "can_suggest": categorizer(request) is not None,
+            "form": {},
+        },
     )
 
 
@@ -68,7 +82,7 @@ async def create_expense(
     merchant: Annotated[str, Form(min_length=1, max_length=100)],
     amount: Annotated[str, Form(max_length=20)],
     spent_on: Annotated[date, Form()],
-    category: Annotated[Category, Form()],
+    category: Annotated[Category | Literal["auto"], Form()],
     description: Annotated[str, Form(max_length=1000)] = "",
     receipt: Annotated[UploadFile | None, File()] = None,
 ) -> Response:
@@ -82,6 +96,9 @@ async def create_expense(
         errors.append(str(error))
     if spent_on > date.today():
         errors.append("The expense date can't be in the future.")
+    suggester = categorizer(request)
+    if category == "auto" and suggester is None:
+        errors.append("Category suggestions are turned off. Choose a category.")
 
     stored: tuple[str, str] | None = None
     if not errors and receipt is not None and receipt.filename:
@@ -95,9 +112,18 @@ async def create_expense(
         return templates.TemplateResponse(
             request,
             "expense_new.html",
-            {"user": user, "categories": list(Category), "form": form, "errors": errors},
+            {
+                "user": user,
+                "categories": list(Category),
+                "can_suggest": suggester is not None,
+                "form": form,
+                "errors": errors,
+            },
             status_code=400,
         )
+
+    if category == "auto" and suggester is not None:
+        category = suggester.suggest(merchant.strip(), description.strip())
 
     expense = Expense(
         submitter_id=user.id,
