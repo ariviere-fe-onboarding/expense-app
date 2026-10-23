@@ -1,11 +1,14 @@
 """Browser previews for receipts attached to expenses."""
 
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Config
 from app.models import Expense
+from app.receipt_preview import load_receipt_preview
 from app.receipts import save_receipt
 from tests.conftest import expense_id, login, sessions
 
@@ -25,16 +28,35 @@ def attach_receipt(client: TestClient, config: Config) -> int:
     return identifier
 
 
-def test_owner_previews_receipt_inline(client: TestClient, config: Config) -> None:
-    """Preview returns the uploaded bytes with an inline disposition."""
+@pytest.mark.parametrize("viewer", ["emp-priya", "emp-marcus", "emp-dana"])
+def test_authorized_user_previews_receipt_inline(
+    client: TestClient, config: Config, viewer: str
+) -> None:
+    """Authorized viewers receive the uploaded bytes with an inline disposition."""
     identifier = attach_receipt(client, config)
-    login(client, "emp-priya")
+    login(client, viewer)
     response = client.get(f"/expenses/{identifier}/receipt/preview")
     assert response.status_code == 200
     assert response.content == PDF
     assert response.headers["content-type"] == "application/pdf"
     assert response.headers["content-disposition"] == "inline"
     assert response.headers["cache-control"] == "no-store"
+
+
+@pytest.mark.parametrize("viewer", ["emp-jonah", "emp-lena"])
+def test_unrelated_user_cannot_preview_receipt(
+    client: TestClient, config: Config, viewer: str
+) -> None:
+    """Unrelated employees and managers get 404 before receipt loading."""
+    identifier = attach_receipt(client, config)
+    login(client, viewer)
+    with patch(
+        "app.routes.previews.load_receipt_preview", wraps=load_receipt_preview
+    ) as load_preview:
+        response = client.get(f"/expenses/{identifier}/receipt/preview")
+        load_preview.assert_not_called()
+    assert response.status_code == 404
+    assert "Expense not found." in response.text
 
 
 def test_expense_page_offers_preview_and_download(client: TestClient, config: Config) -> None:
