@@ -18,7 +18,7 @@ from app.deps import LoginRequired
 from app.models import Category, ExpenseStatus
 from app.money import format_cents
 from app.payouts_client import PayoutsClient
-from app.routes import approvals, auth, expenses, profile, reports
+from app.routes import approvals, auth, downloads, expenses, profile, reports
 
 PACKAGE_DIR = Path(__file__).parent
 UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
@@ -100,4 +100,5 @@ def create_app(
     for router in (auth.router, expenses.router, approvals.router, profile.router):
         app.include_router(router)
     app.include_router(reports.router)
+    app.include_router(downloads.router)
     return app
