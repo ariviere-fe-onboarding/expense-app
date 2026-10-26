@@ -12,6 +12,7 @@ from fastapi.responses import PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app.categorizer import Categorizer
 from app.config import Config, get_config
 from app.db import Base, make_engine, make_session_factory
 from app.deps import LoginRequired
@@ -71,6 +72,7 @@ def create_app(
     app.state.session_factory = make_session_factory(engine)
     app.state.templates = build_templates()
     app.state.payouts = PayoutsClient(cfg, transport)
+    app.state.categorizer = Categorizer(cfg.anthropic_api_key) if cfg.anthropic_api_key else None
 
     @app.middleware("http")
     async def same_origin_and_headers(
