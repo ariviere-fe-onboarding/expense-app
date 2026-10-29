@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
 
+from app.fx import to_usd
+
 MAX_EXPENSE_CENTS = 1_000_000
+CURRENCY_SYMBOLS = {"USD": "$", "EUR": "€", "GBP": "£", "CAD": "CA$"}
 
 
 class AmountError(ValueError):
     """Raised when a user-entered amount is not a valid positive dollar amount."""
 
 
-def parse_amount(text: str) -> int:
-    """Convert '1,234.50' or '$12' to integer cents without floating point."""
+def parse_amount(text: str, currency: str = "USD") -> int:
+    """Parse original-currency cents and enforce the procurement limit in USD cents."""
     cleaned = text.strip().removeprefix("$").replace(",", "")
     try:
         value = Decimal(cleaned)
@@ -24,14 +27,14 @@ def parse_amount(text: str) -> int:
     cents = int(value * 100)
     if cents <= 0:
         raise AmountError("Amount must be greater than zero.")
-    if cents > MAX_EXPENSE_CENTS:
+    if to_usd(cents, currency) > MAX_EXPENSE_CENTS:
         raise AmountError("Expenses over $10,000.00 must go through procurement.")
     return cents
 
 
 def format_cents(cents: int, currency: str = "USD") -> str:
     """Render integer cents as '$1,234.50'."""
-    symbol = "$" if currency == "USD" else f"{currency} "
+    symbol = CURRENCY_SYMBOLS.get(currency, f"{currency} ")
     sign = "-" if cents < 0 else ""
     whole, fraction = divmod(abs(cents), 100)
     return f"{sign}{symbol}{whole:,}.{fraction:02d}"

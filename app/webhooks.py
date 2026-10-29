@@ -8,6 +8,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.fx import to_usd
 from app.models import Expense, User, WebhookDelivery, utcnow
 from app.payouts_client import PayoutsClient, PayoutsUnavailable
 
@@ -24,8 +25,8 @@ def expense_approved_event(expense: Expense, approver: User) -> dict[str, object
         "data": {
             "expense_id": expense.id,
             "employee_id": expense.submitter_id,
-            "amount_cents": expense.amount_cents,
-            "currency": expense.currency,
+            "amount_cents": to_usd(expense.amount_cents, expense.currency),
+            "currency": "USD",
             "approved_by": approver.id,
         },
     }
