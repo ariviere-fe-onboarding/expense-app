@@ -25,7 +25,7 @@ def expense_approved_event(expense: Expense, approver: User) -> dict[str, object
         "data": {
             "expense_id": expense.id,
             "employee_id": expense.submitter_id,
-            "amount": round(to_usd(expense.amount_cents, expense.currency), 2),
+            "amount_cents": to_usd(expense.amount_cents, expense.currency),
             "currency": "USD",
             "approved_by": approver.id,
         },

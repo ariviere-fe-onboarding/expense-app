@@ -69,12 +69,18 @@ class FakePayouts:
         if not hmac.compare_digest(expected, parts["v1"]):
             return httpx.Response(401)
         event = json.loads(request.content)
-        self.webhooks.append(event)
         data = event["data"]
+        if (
+            type(data.get("amount_cents")) is not int
+            or not 0 < data["amount_cents"] <= 10_000_000
+            or data.get("currency") != "USD"
+        ):
+            return httpx.Response(422)
+        self.webhooks.append(event)
         self.payouts[data["expense_id"]] = {
             "payout_id": len(self.webhooks),
             "status": "submitted",
-            "amount_cents": round(data["amount"] * 100),
+            "amount_cents": data["amount_cents"],
             "currency": data["currency"],
         }
         return httpx.Response(202, json={"payout_id": len(self.webhooks), "status": "submitted"})

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.fx import to_usd
 from app.models import Expense, ExpenseStatus, Role, User
 
 # Managers give final approval up to and including $500.00 (see the money guideline).
@@ -47,6 +48,6 @@ def approval_outcome(user: User, expense: Expense) -> Decision:
     """The status an approval by this user moves the expense to. Call after can_decide."""
     if user.role is Role.FINANCE:
         return Decision(ExpenseStatus.APPROVED, is_final=True)
-    if expense.amount_cents <= MANAGER_APPROVAL_LIMIT_CENTS:
+    if to_usd(expense.amount_cents, expense.currency) <= MANAGER_APPROVAL_LIMIT_CENTS:
         return Decision(ExpenseStatus.APPROVED, is_final=True)
     return Decision(ExpenseStatus.AWAITING_FINANCE, is_final=False)

@@ -92,7 +92,7 @@ async def create_expense(
     errors: list[str] = []
     amount_cents = 0
     try:
-        amount_cents = parse_amount(amount)
+        amount_cents = parse_amount(amount, currency)
     except AmountError as error:
         errors.append(str(error))
     if spent_on > date.today():
