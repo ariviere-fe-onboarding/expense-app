@@ -75,6 +75,7 @@ button, .button {
 button.secondary { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 button.link { background: none; color: var(--accent); padding: 0; font-weight: 400; text-decoration: underline; }
 .actions { display: flex; gap: 0.75rem; }
+.amount-row { display: grid; grid-template-columns: 1fr 8rem; gap: 0.75rem; }
 .notice { background: var(--pill-ok); padding: 0.75rem 1rem; border-radius: 8px; }
 .error { color: var(--danger); }
 .pill { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.85rem; white-space: nowrap; }

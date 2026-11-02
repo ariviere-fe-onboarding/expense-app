@@ -7,7 +7,7 @@
     <span class="pill {{ expense.status.value }}">{{ status_labels[expense.status] }}</span>
   </div>
   <dl class="facts">
-    <dt>Amount</dt><dd>{{ expense.amount_cents|cents(expense.currency) }}</dd>
+    <dt>Amount</dt><dd>{{ expense.amount_cents|cents(expense.currency) }}{% if expense.currency != "USD" %} <span class="muted">≈ {{ expense|usd }}</span>{% endif %}</dd>
     <dt>Date</dt><dd>{{ expense.spent_on.isoformat() }}</dd>
     <dt>Category</dt><dd>{{ category_labels[expense.category] }}</dd>
     <dt>Submitted by</dt><dd>{{ expense.submitter.name }} ({{ expense.submitter.team }})</dd>
