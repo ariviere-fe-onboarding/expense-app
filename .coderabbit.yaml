@@ -82,6 +82,19 @@ reviews:
     issue_assessment:
       mode: warning
     custom_checks:
+      - name: "PR size limit"
+        mode: error
+        instructions: >-
+          Evaluate the full pull request diff against its base, not only the latest
+          commit or incremental review. Calculate total changed lines as additions
+          plus deletions across all changed files, including tests, documentation,
+          configuration, generated files, and lockfiles. Use the pull request diff
+          statistics; do not count context lines or use net line growth. Fail when
+          the total exceeds 100 lines. Pass when the total is 100 lines or fewer.
+          Report additions, deletions, the total, and the 100-line limit. If the full
+          diff statistics cannot be determined, fail and explain that the size
+          could not be verified. Apply this check regardless of the risk rating or
+          whether the code has other findings.
       - name: "Security Gate"
         mode: error
         instructions: >-
