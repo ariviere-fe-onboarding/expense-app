@@ -92,9 +92,11 @@ reviews:
           statistics; do not count context lines or use net line growth. Fail when
           the total exceeds 100 lines. Pass when the total is 100 lines or fewer.
           Report additions, deletions, the total, and the 100-line limit. If the full
-          diff statistics cannot be determined, fail and explain that the size
-          could not be verified. Apply this check regardless of the risk rating or
-          whether the code has other findings.
+          diff statistics cannot be determined, report Inconclusive and explain
+          what information is missing; do not claim the size limit passed.
+          Inconclusive is non-blocking, so this experimental check is not a
+          guaranteed size enforcement mechanism. Apply the size comparison
+          regardless of the risk rating or whether the code has other findings.
       - name: "Security Gate"
         mode: error
         instructions: >-
