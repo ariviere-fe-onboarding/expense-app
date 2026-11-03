@@ -1,7 +1,4 @@
-"""Characterize the deliberately vulnerable baseline, outside ordinary CI.
-
-These tests confirm the flaw exists. They must be reversed when fixing it.
-"""
+"""Verify the legacy Finance report no longer exposes expenses to unauthorized callers."""
 
 # ruff: noqa: S101 -- these are presenter-run tests.
 
@@ -10,16 +7,15 @@ from fastapi.testclient import TestClient
 from tests.conftest import login
 
 
-def test_anonymous_visitor_reads_every_teams_expenses(client: TestClient) -> None:
+def test_anonymous_visitor_cannot_read_expense_summary(client: TestClient) -> None:
+    """Anonymous visitors must sign in before accessing reports."""
     response = client.get("/reports/summary", follow_redirects=False)
-    assert response.status_code == 200
-    rows = response.json()
-    assert {row["team"] for row in rows} == {"Design", "Sales"}
-    assert all(row["employee_email"] for row in rows)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
 
 
-def test_employee_reads_another_teams_expenses(client: TestClient) -> None:
+def test_employee_cannot_read_expense_summary(client: TestClient) -> None:
+    """Signing in as an employee does not grant access to Finance reports."""
     login(client, "emp-priya")
-    response = client.get("/reports/summary")
-    assert response.status_code == 200
-    assert any(row["team"] == "Sales" for row in response.json())
+    response = client.get("/reports/summary", follow_redirects=False)
+    assert response.status_code == 403
