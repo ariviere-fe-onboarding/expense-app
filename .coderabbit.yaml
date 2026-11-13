@@ -46,14 +46,8 @@ reviews:
 
   path_filters:
     - "!**/*.lock"
-    - "!**/package-lock.json"
-    - "!**/pnpm-lock.yaml"
-    - "!**/yarn.lock"
     - "!**/*.min.js"
     - "!**/*.min.css"
-    - "!**/dist/**"
-    - "!**/build/**"
-    - "!**/vendor/**"
     - "!**/*.snap"
     - "!**/*.generated.*"
     - "!.venv/**"
@@ -148,6 +142,10 @@ reviews:
           required by the API contracts guideline, or would break payouts-service.
 
   finishing_touches:
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
     docstrings:
       enabled: false
     unit_tests:
