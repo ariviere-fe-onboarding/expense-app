@@ -94,6 +94,8 @@ def set_delegation(
 @router.post("/profile/delegation/clear")
 def clear_delegation(session: DbSession, user: CurrentUser) -> Response:
     """Remove this manager's delegation."""
+    if user.role is not Role.MANAGER:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only managers can delegate approvals.")
     session.execute(delete(Delegation).where(Delegation.manager_id == user.id))
     session.commit()
     return RedirectResponse("/profile?notice=cleared", status_code=303)

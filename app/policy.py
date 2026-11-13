@@ -30,11 +30,15 @@ def is_approving_manager(user: User, expense: Expense, covering: frozenset[str])
 
 
 def can_view(user: User, expense: Expense, covering: frozenset[str] = frozenset()) -> bool:
-    """The submitter, their manager or delegate, and finance may view an expense."""
+    """Keep delegated reads limited to expenses still awaiting a manager decision."""
     return (
         expense.submitter_id == user.id
-        or is_approving_manager(user, expense, covering)
+        or expense.submitter.manager_id == user.id
         or user.role is Role.FINANCE
+        or (
+            expense.status is ExpenseStatus.SUBMITTED
+            and is_approving_manager(user, expense, covering)
+        )
     )
 
 
