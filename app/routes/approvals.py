@@ -91,5 +91,7 @@ def decide(
 
     if delivery is not None:
         webhooks.attempt(session, payouts, delivery)
+    if not policy.can_view(user, expense, covering):
+        return RedirectResponse("/approvals", status_code=303)
     notice = "rejected" if decision == "reject" else "approved"
     return RedirectResponse(f"/expenses/{expense.id}?notice={notice}", status_code=303)
