@@ -28,6 +28,7 @@ class Config:
     session_hours: int = 8
     reset_token_minutes: int = 30
     payouts_timeout_seconds: float = 3.0
+    anthropic_api_key: str | None = None
 
 
 def _load_env_file(path: Path) -> dict[str, str]:
@@ -64,6 +65,7 @@ def load_config(env_file: Path = Path(".env")) -> Config:
         upload_dir=Path(values.get("FERNWAY_UPLOAD_DIR", ".local/receipts")),
         mail_dir=Path(values.get("FERNWAY_MAIL_DIR", ".local/mail")),
         cookie_secure=values.get("FERNWAY_COOKIE_SECURE", "false").lower() == "true",
+        anthropic_api_key=values.get("ANTHROPIC_API_KEY") or None,
     )
 
 
