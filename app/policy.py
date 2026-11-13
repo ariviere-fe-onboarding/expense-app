@@ -4,23 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlalchemy import and_, literal
-from sqlalchemy.sql.elements import ColumnElement
-
 from app.models import Expense, ExpenseStatus, Role, User
 
 # Managers give final approval up to and including $500.00 (see the money guideline).
 MANAGER_APPROVAL_LIMIT_CENTS = 50_000
-
-
-def can_export_expenses(user: User) -> bool:
-    """Only Finance may export company-wide expense data."""
-    return user.role is Role.FINANCE
-
-
-def finance_export_filter(user: User) -> ColumnElement[bool]:
-    """Limit export queries to approved expenses accessible to Finance."""
-    return and_(literal(can_export_expenses(user)), Expense.status == ExpenseStatus.APPROVED)
 
 
 @dataclass(frozen=True)
