@@ -8,6 +8,16 @@ from fastapi.testclient import TestClient
 from tests.conftest import expense_id, login
 
 
+def test_anonymous_cannot_export(client: TestClient) -> None:
+    response = client.get(
+        "/finance/export",
+        params={"start": "2026-09-01", "end": "2026-09-30"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
+
+
 def export(client: TestClient, start: str, end: str) -> list[list[str]]:
     response = client.get("/finance/export", params={"start": start, "end": end})
     assert response.status_code == 200

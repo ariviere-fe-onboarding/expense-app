@@ -10,8 +10,9 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import Response
 from sqlalchemy import select
 
+from app import policy
 from app.deps import CurrentUser, DbSession
-from app.models import Expense, ExpenseStatus, Role
+from app.models import Expense
 
 router = APIRouter()
 
@@ -27,7 +28,7 @@ def spreadsheet_safe(value: str) -> str:
 @router.get("/finance/export")
 def export_approved(session: DbSession, user: CurrentUser, start: date, end: date) -> Response:
     """Download approved expenses dated between start and end as CSV."""
-    if user.role is not Role.FINANCE:
+    if not policy.can_export_expenses(user):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only Finance can export expenses.")
     if end < start:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "The end date is before the start date.")
@@ -35,7 +36,7 @@ def export_approved(session: DbSession, user: CurrentUser, start: date, end: dat
     expenses = session.scalars(
         select(Expense)
         .where(
-            Expense.status == ExpenseStatus.APPROVED,
+            policy.finance_export_filter(user),
             Expense.spent_on >= start,
             Expense.spent_on < end,
         )
