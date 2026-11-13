@@ -4,8 +4,9 @@ import csv
 import io
 from datetime import date
 
+import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import event
+from sqlalchemy import event, select
 
 from app.models import Category, Expense, ExpenseStatus, Role, User
 from tests.conftest import expense_id, login, sessions
@@ -123,6 +124,27 @@ def test_formula_text_is_neutralized(client: TestClient) -> None:
     login(client, "emp-dana")
     merchants = [row[4] for row in export(client, "2026-09-01", "2026-09-30")[1:-1]]
     assert "'=HYPERLINK(1)" in merchants
+
+
+@pytest.mark.parametrize("category", ["=1+1", "+1", "-1", "@SUM(1)", "\t=1", "\r=1"])
+def test_formula_category_is_rejected_before_persistence(client: TestClient, category: str) -> None:
+    """Categories are a closed enum; formula text cannot enter the export data."""
+    login(client, "emp-priya")
+    response = client.post(
+        "/expenses",
+        data={
+            "merchant": "Invalid category probe",
+            "amount": "12.00",
+            "spent_on": "2026-09-15",
+            "category": category,
+        },
+    )
+    assert response.status_code == 422
+    with sessions(client)() as session:
+        assert (
+            session.scalar(select(Expense).where(Expense.merchant == "Invalid category probe"))
+            is None
+        )
 
 
 def test_only_finance_can_export(client: TestClient) -> None:
