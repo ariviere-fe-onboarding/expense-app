@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 from datetime import date
+from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import Response
@@ -40,7 +41,7 @@ def export_approved(session: DbSession, user: CurrentUser, start: date, end: dat
         .where(
             policy.finance_export_filter(user),
             Expense.spent_on >= start,
-            Expense.spent_on < end,
+            Expense.spent_on <= end,
         )
         .order_by(Expense.spent_on, Expense.id)
     ).all()
@@ -57,11 +58,11 @@ def export_approved(session: DbSession, user: CurrentUser, start: date, end: dat
                 spreadsheet_safe(expense.submitter.team),
                 spreadsheet_safe(expense.merchant),
                 expense.category.value,
-                f"{expense.amount_cents / 100:.2f}",
+                f"{Decimal(expense.amount_cents) / 100:.2f}",
             )
         )
-    total = sum(expense.amount_cents / 100 for expense in expenses)
-    writer.writerow(("total", "", "", "", "", "", f"{total:.2f}"))
+    total_cents = sum(expense.amount_cents for expense in expenses)
+    writer.writerow(("total", "", "", "", "", "", f"{Decimal(total_cents) / 100:.2f}"))
 
     filename = f"approved-expenses-{start.isoformat()}-to-{end.isoformat()}.csv"
     return Response(
