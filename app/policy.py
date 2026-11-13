@@ -53,11 +53,6 @@ def approval_outcome(user: User, expense: Expense) -> Decision:
     """The status an approval by this user moves the expense to. Call after can_decide."""
     if user.role is Role.FINANCE:
         return Decision(ExpenseStatus.APPROVED, is_final=True)
-    if expense.submitter.manager_id != user.id:
-        # Covering delegates approve within the same limit as the manager.
-        if expense.amount_cents < MANAGER_APPROVAL_LIMIT_CENTS:
-            return Decision(ExpenseStatus.APPROVED, is_final=True)
-        return Decision(ExpenseStatus.AWAITING_FINANCE, is_final=False)
     if expense.amount_cents <= MANAGER_APPROVAL_LIMIT_CENTS:
         return Decision(ExpenseStatus.APPROVED, is_final=True)
     return Decision(ExpenseStatus.AWAITING_FINANCE, is_final=False)

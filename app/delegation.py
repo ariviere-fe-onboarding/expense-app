@@ -16,7 +16,7 @@ def covered_managers(session: Session, user: User, today: date) -> frozenset[str
         select(Delegation.manager_id).where(
             Delegation.delegate_id == user.id,
             Delegation.starts_on <= today,
-            Delegation.ends_on > today,
+            Delegation.ends_on >= today,
         )
     ).all()
     return frozenset(rows)
