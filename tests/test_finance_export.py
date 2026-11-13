@@ -2,10 +2,69 @@ from __future__ import annotations
 
 import csv
 import io
+from datetime import date
 
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 
-from tests.conftest import expense_id, login
+from app.models import Category, Expense, ExpenseStatus, Role, User
+from tests.conftest import expense_id, login, sessions
+
+
+def _export_query_count(client: TestClient) -> int:
+    """Count SELECT statements for a complete authenticated export request."""
+    statements: list[str] = []
+
+    def record_query(
+        _connection: object,
+        _cursor: object,
+        statement: str,
+        _parameters: object,
+        _context: object,
+        _executemany: bool,
+    ) -> None:
+        if statement.lstrip().upper().startswith("SELECT"):
+            statements.append(statement)
+
+    with sessions(client)() as session:
+        engine = session.get_bind()
+    event.listen(engine, "before_cursor_execute", record_query)
+    try:
+        export(client, "2026-09-01", "2026-09-30")
+    finally:
+        event.remove(engine, "before_cursor_execute", record_query)
+    return len(statements)
+
+
+def test_export_query_count_does_not_grow_per_submitter(client: TestClient) -> None:
+    login(client, "emp-dana")
+    baseline = _export_query_count(client)
+    with sessions(client)() as session:
+        existing = session.get(User, "emp-priya")
+        assert existing is not None
+        for index in range(20):
+            submitter = User(
+                id=f"emp-export-{index}",
+                email=f"export-{index}@fernway.example",
+                name=f"Export Employee {index}",
+                team="Design",
+                role=Role.EMPLOYEE,
+                manager_id="emp-marcus",
+                password_hash=existing.password_hash,
+            )
+            session.add(
+                Expense(
+                    submitter=submitter,
+                    merchant=f"Export Merchant {index}",
+                    description="",
+                    category=Category.OTHER,
+                    amount_cents=100,
+                    spent_on=date(2026, 9, 15),
+                    status=ExpenseStatus.APPROVED,
+                )
+            )
+        session.commit()
+    assert _export_query_count(client) <= baseline + 1
 
 
 def test_anonymous_cannot_export(client: TestClient) -> None:

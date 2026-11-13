@@ -9,6 +9,7 @@ from datetime import date
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import Response
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from app import policy
 from app.deps import CurrentUser, DbSession
@@ -35,6 +36,7 @@ def export_approved(session: DbSession, user: CurrentUser, start: date, end: dat
 
     expenses = session.scalars(
         select(Expense)
+        .options(joinedload(Expense.submitter))
         .where(
             policy.finance_export_filter(user),
             Expense.spent_on >= start,
