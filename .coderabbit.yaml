@@ -4,14 +4,14 @@ language: en-US
 early_access: true
 
 tone_instructions: >-
-  Be brief and concrete. Lead with the defect and its effect on users, data or money. No praise,
-  no style or naming remarks, no restating what the code does. Say when a change sits on a path that
-  handles expense authorization, approval decisions or reimbursement data.
+  Be brief and concrete. Lead with the defect and user, data or money impact. No praise, style,
+  naming remarks or restating code. Call out changes involving expense authorization,
+  approval decisions or reimbursement data.
 
 reviews:
   profile: chill
   enable_prompt_for_ai_agents: true
-  # Keep the repository approval workflow required by AGENTS.md.
+  # Preserve the existing repository approval workflow.
   auto_approvals:
     enabled: true
   merge_risk_instructions: >-
