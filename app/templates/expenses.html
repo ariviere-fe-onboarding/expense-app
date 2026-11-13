@@ -5,6 +5,15 @@
   <h1>My expenses</h1>
   <a class="button" href="/expenses/new">New expense</a>
 </div>
+<section class="card">
+  <form method="get" action="/">
+    <label>Search merchant or description
+      <input type="search" name="q" value="{{ query or '' }}" maxlength="200" placeholder="Hotel, train, client workshop…">
+    </label>
+    <button type="submit">Search</button>
+    {% if query %}<a href="/">Clear search</a>{% endif %}
+  </form>
+</section>
 {% if expenses %}
 <table class="card">
   <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th class="num">Amount</th><th>Status</th></tr></thead>
@@ -21,6 +30,10 @@
   </tbody>
 </table>
 {% else %}
+{% if query %}
+<p class="card">No expenses match your search.</p>
+{% else %}
 <p class="card">No expenses yet. <a href="/expenses/new">Submit your first one.</a></p>
+{% endif %}
 {% endif %}
 {% endblock %}
