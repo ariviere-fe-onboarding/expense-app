@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy import select
 
 from app import policy
-from app.delegation import covered_managers
+from app.delegation import covered_managers, current_date
 from app.deps import AppConfig, CurrentUser, DbSession, Payouts, Templates
 from app.models import Category, Expense, ExpenseStatus
 from app.money import AmountError, parse_amount
@@ -29,7 +29,7 @@ NOTICES = {
 def visible_expense(session: DbSession, user: CurrentUser, expense_id: int) -> Expense:
     """Load an expense the user may view. Others get 404 so IDs reveal nothing."""
     expense = session.get(Expense, expense_id)
-    covering = covered_managers(session, user, date.today())
+    covering = covered_managers(session, user, current_date())
     if expense is None or not policy.can_view(user, expense, covering):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Expense not found.")
     return expense
@@ -143,7 +143,7 @@ def expense_detail(
             "user": user,
             "expense": expense,
             "can_decide": policy.can_decide(
-                user, expense, covered_managers(session, user, date.today())
+                user, expense, covered_managers(session, user, current_date())
             ),
             "payout": payout,
             "payout_error": payout_error,

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Form, HTTPException, Request, status
@@ -10,7 +9,7 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import select, update
 
 from app import policy, webhooks
-from app.delegation import covered_managers
+from app.delegation import covered_managers, current_date
 from app.deps import CurrentUser, DbSession, Payouts, Templates
 from app.models import Approval, Expense, ExpenseStatus, Role, User
 
@@ -23,7 +22,7 @@ def approval_queue(
 ) -> Response:
     """List the expenses waiting on the signed-in user's decision."""
     if user.role is Role.MANAGER:
-        managers = {user.id, *covered_managers(session, user, date.today())}
+        managers = {user.id, *covered_managers(session, user, current_date())}
         query = (
             select(Expense)
             .join(Expense.submitter)
@@ -55,7 +54,7 @@ def decide(
     comment: Annotated[str, Form(max_length=500)] = "",
 ) -> Response:
     """Approve or reject an expense the user is allowed to decide on."""
-    covering = covered_managers(session, user, date.today())
+    covering = covered_managers(session, user, current_date())
     expense = session.get(Expense, expense_id)
     if expense is None or not policy.can_view(user, expense, covering):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Expense not found.")

@@ -12,21 +12,11 @@ from tests.conftest import FakePayouts, expense_id, expense_status, login, sessi
 TEST_TODAY = date(2026, 10, 1)
 
 
-class FixedDate(date):
-    """A stable date for delegation tests and route authorization checks."""
-
-    @classmethod
-    def today(cls) -> date:
-        """Return the test date, independent of the wall clock."""
-        return TEST_TODAY
-
-
 @pytest.fixture(autouse=True)
-def fixed_delegation_clock(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+def fixed_delegation_clock(monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep approval and expense routes on the same day as the tests."""
-    # Build the client before patching so Pydantic resolves real date annotations.
-    monkeypatch.setattr("app.routes.approvals.date", FixedDate)
-    monkeypatch.setattr("app.routes.expenses.date", FixedDate)
+    monkeypatch.setattr("app.routes.approvals.current_date", lambda: TEST_TODAY)
+    monkeypatch.setattr("app.routes.expenses.current_date", lambda: TEST_TODAY)
 
 
 def delegate_to_lena(client: TestClient, start: date, end: date) -> int:
