@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event
 
 from app.models import Category, Expense, ExpenseStatus, Role, User
+from app.routes.finance import format_amount
 from tests.conftest import expense_id, login, sessions
 
 
@@ -206,3 +207,40 @@ def test_invalid_export_dates_are_rejected(client: TestClient, start: str) -> No
         client.get("/finance/export", params={"start": start, "end": "2026-09-30"}).status_code
         == 422
     )
+
+
+@pytest.mark.parametrize(
+    ("cents", "expected"),
+    [
+        (0, "0.00"),
+        (1, "0.01"),
+        (-1, "-0.01"),
+        (-12345, "-123.45"),
+        (10**30 + 1, "10000000000000000000000000000.01"),
+    ],
+)
+def test_format_amount(cents: int, expected: str) -> None:
+    """Formatting preserves sign and cents without decimal context rounding."""
+    assert format_amount(cents) == expected
+
+
+def test_export_excludes_non_usd_expenses(client: TestClient) -> None:
+    """Foreign-currency expenses cannot enter USD rows or totals."""
+    with sessions(client)() as session:
+        session.add(
+            Expense(
+                submitter_id="emp-priya",
+                merchant="Euro expense",
+                description="",
+                category=Category.OTHER,
+                amount_cents=12345,
+                currency="EUR",
+                spent_on=date(2026, 9, 19),
+                status=ExpenseStatus.APPROVED,
+            )
+        )
+        session.commit()
+    login(client, "emp-dana")
+    rows = export(client, "2026-09-01", "2026-09-30")
+    assert [row[4] for row in rows[1:-1]] == ["Brightline Rail"]
+    assert rows[-1][-1] == "86.40"
