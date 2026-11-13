@@ -153,6 +153,10 @@ reviews:
 
 knowledge_base:
   opt_out: false
+  jira:
+    usage: enabled
+    project_keys:
+      - KAN
   web_search:
     enabled: true
   learnings:
