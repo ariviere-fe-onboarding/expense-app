@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import FakePayouts, expense_id, expense_status, login
@@ -52,11 +53,23 @@ def test_delegate_sends_large_expense_to_finance(client: TestClient) -> None:
     assert expense_status(client, "Harborview Hotel") == "awaiting_finance"
 
 
-def test_delegation_not_active_before_it_starts(client: TestClient) -> None:
+@pytest.mark.parametrize(("start_offset", "end_offset"), [(3, 10), (-10, -3)])
+def test_inactive_delegation_denies_decisions(
+    client: TestClient, fake_payouts: FakePayouts, start_offset: int, end_offset: int
+) -> None:
     today = date.today()
-    delegate_to_lena(client, today + timedelta(days=3), today + timedelta(days=10))
+    delegate_to_lena(
+        client, today + timedelta(days=start_offset), today + timedelta(days=end_offset)
+    )
     login(client, "emp-lena")
     assert "Figment Fonts" not in client.get("/approvals").text
+    response = client.post(
+        f"/expenses/{expense_id(client, 'Figment Fonts')}/decision",
+        data={"decision": "approve"},
+    )
+    assert response.status_code == 404
+    assert expense_status(client, "Figment Fonts") == "submitted"
+    assert fake_payouts.webhooks == []
 
 
 def test_only_managers_can_be_delegates(client: TestClient) -> None:
