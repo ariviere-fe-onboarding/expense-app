@@ -1,40 +1,70 @@
-# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
-# CodeRabbit config for expense-app: employee expenses, approvals, and the payouts webhook.
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Minimal customer-starter presentation, with Fernway security and contract safeguards.
 language: en-US
 early_access: true
 
 tone_instructions: >-
-  Senior reviewer. Open each finding with "Observation:", name the line and the invariant
-  at risk, then explain impact. No emoji, no filler.
+  Be brief and concrete. Lead with the defect and user, data or money impact. No praise, style,
+  naming remarks or restating code. Call out changes involving expense authorization,
+  approval decisions or reimbursement data.
 
 reviews:
   profile: chill
-  request_changes_workflow: true
+  enable_prompt_for_ai_agents: true
+  # Preserve the existing repository approval workflow.
+  auto_approvals:
+    enabled: true
+  merge_risk_instructions: >-
+    High risk: authentication, object authorization, approval decisions, monetary units,
+    expense.approved payloads and signing, receipt access, database schema, CI and deployment
+    configuration, and agent rule files. Low risk: copy, styling, docs, additive tests,
+    and internal refactors with unchanged behavior covered by tests.
+  collapse_walkthrough: true
   high_level_summary: true
-  changed_files_summary: true
-  sequence_diagrams: true
-  estimate_code_review_effort: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
   review_status: false
+  review_details: false
+  commit_status: true
+  fail_commit_status: true
   assess_linked_issues: true
-  related_issues: true
-  related_prs: true
-  suggested_labels: true
-  suggested_reviewers: true
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
   poem: false
+  in_progress_fortune: false
 
   auto_review:
     enabled: true
     auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 5
     drafts: false
     ignore_title_keywords:
       - "[skip review]"
 
   path_filters:
+    - "!**/*.lock"
+    - "!**/*.min.js"
+    - "!**/*.min.css"
+    - "!**/*.snap"
+    - "!**/*.generated.*"
     - "!.venv/**"
     - "!**/__pycache__/**"
     - "!app/static/**"
 
   path_instructions:
+    - path: '**/*'
+      instructions: 'Your conventions first: the team''s rule files and standards documents apply before
+        general practice. Judge the change against its title, description and linked issue; trace the
+        headline behaviour the pull request claims before anything else and say if it is not actually
+        delivered. Report defects and risks the change introduces: correctness, security, reliability,
+        data loss, performance regressions, breaking changes to anything another component or repository
+        calls. Flag a test deleted or weakened that covered behaviour the change touches, and files
+        changed that the title, description and issue do not account for. Do not request refactors,
+        style, naming, formatting or documentation changes outside the diff. Keep comments brief and
+        actionable.'
     - path: "**/{AGENTS.md,CLAUDE.md,.cursorrules,copilot-instructions.md}"
       instructions: |
         Agent-instruction files are a security-critical surface. Flag changes that expand
@@ -79,24 +109,23 @@ reviews:
         - ".coderabbit/ast-grep-rules"
 
   pre_merge_checks:
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    docstrings:
+      mode: "off"
     issue_assessment:
       mode: warning
     custom_checks:
-      - name: "PR size limit"
-        mode: error
-        instructions: >-
-          Evaluate the full pull request diff against its base, not only the latest
-          commit or incremental review. Calculate total changed lines as additions
-          plus deletions across all changed files, including tests, documentation,
-          configuration, generated files, and lockfiles. Use the pull request diff
-          statistics; do not count context lines or use net line growth. Fail when
-          the total exceeds 100 lines. Pass when the total is 100 lines or fewer.
-          Report additions, deletions, the total, and the 100-line limit. If the full
-          diff statistics cannot be determined, report Inconclusive and explain
-          what information is missing; do not claim the size limit passed.
-          Inconclusive is non-blocking, so this experimental check is not a
-          guaranteed size enforcement mechanism. Apply the size comparison
-          regardless of the risk rating or whether the code has other findings.
+      - name: Scope matches description
+        mode: warning
+        instructions: 'Pass when every changed file is accounted for by the pull request title, description
+          or linked issue. Fail when any of these is changed without the description saying so: an agent
+          rule file (AGENTS.md, CLAUDE.md, .cursorrules and similar), a CI workflow, deployment or infrastructure
+          configuration, a database migration or schema, a dependency manifest or lockfile with a non-patch
+          change, or a file under a folder the description does not mention at all. List the unaccounted-for
+          files.'
       - name: "Security Gate"
         mode: error
         instructions: >-
@@ -113,17 +142,21 @@ reviews:
           required by the API contracts guideline, or would break payouts-service.
 
   finishing_touches:
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
     docstrings:
-      enabled: true
+      enabled: false
     unit_tests:
-      enabled: true
+      enabled: false
 
 knowledge_base:
   opt_out: false
   web_search:
     enabled: true
   learnings:
-    scope: auto
+    scope: local
   issues:
     scope: auto
   pull_requests:
@@ -135,10 +168,14 @@ knowledge_base:
       - files: "ariviere-fe-onboarding/engineering-standards:guidelines/*.md"
         applyTo: "**/*.py"
 
-  automatic_repository_linking: false
+  automatic_linking_mode: auto
   linked_repositories:
     - repository: "ariviere-fe-onboarding/payouts-service"
       instructions: >-
         payouts-service consumes the expense.approved webhook this repository sends and serves
         the /internal API it calls. When a change affects that contract, check the consumer
         (payouts/schemas.py, payouts/signing.py, payouts/service.py) and cite the file it breaks.
+
+chat:
+  art: false
+  auto_reply: true
