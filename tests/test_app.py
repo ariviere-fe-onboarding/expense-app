@@ -72,7 +72,8 @@ def test_format_cents() -> None:
     assert format_cents(123_456) == "$1,234.56"
     assert format_cents(5) == "$0.05"
     assert format_cents(-250) == "-$2.50"
-    assert format_cents(100, "EUR") == "EUR 1.00"
+    assert format_cents(100, "EUR") == "€1.00"
+    assert format_cents(100, "JPY") == "JPY 1.00"
 
 
 def test_receipt_path_refuses_traversal(tmp_path: Path) -> None:

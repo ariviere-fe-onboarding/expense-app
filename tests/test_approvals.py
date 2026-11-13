@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import json
 
+import httpx
+import pytest
 from fastapi.testclient import TestClient
 
+from app.config import Config
 from app.models import WebhookDelivery
-from app.payouts_client import PayoutsClient
+from app.payouts_client import PayoutsClient, PayoutsUnavailable
 from app.webhooks import retry_pending
 from tests.conftest import CONTRACT_FIXTURE, FakePayouts, expense_id, expense_status, login
+from tests.test_expenses import submit
 
 
 def decide(client: TestClient, merchant: str, decision: str = "approve") -> int:
@@ -28,20 +32,43 @@ def test_manager_approves_small_expense_as_final(
     assert len(fake_payouts.webhooks) == 1
 
 
-def test_limit_is_inclusive_at_500(client: TestClient, fake_payouts: FakePayouts) -> None:
+@pytest.mark.parametrize(
+    ("currency", "amount", "usd_cents", "is_final"),
+    [
+        ("USD", "500.00", 50_000, True),
+        ("USD", "500.01", 50_001, False),
+        ("EUR", "462.96", 50_000, True),
+        ("EUR", "462.97", 50_001, False),
+        ("GBP", "393.70", 50_000, True),
+        ("GBP", "393.71", 50_001, False),
+        ("CAD", "684.93", 50_000, True),
+        ("CAD", "684.94", 50_001, False),
+        ("EUR", "500.00", 54_000, False),
+        ("CAD", "600.00", 43_800, True),
+    ],
+)
+def test_manager_limit_uses_usd_cents(
+    client: TestClient,
+    fake_payouts: FakePayouts,
+    currency: str,
+    amount: str,
+    usd_cents: int,
+    is_final: bool,
+) -> None:
     login(client, "emp-priya")
-    client.post(
-        "/expenses",
-        data={
-            "merchant": "Exact Limit",
-            "amount": "500.00",
-            "spent_on": "2026-09-30",
-            "category": "other",
-        },
+    assert (
+        submit(client, merchant="Exact Limit", amount=amount, currency=currency).status_code == 303
     )
     login(client, "emp-marcus")
-    decide(client, "Exact Limit")
-    assert expense_status(client, "Exact Limit") == "approved"
+    assert decide(client, "Exact Limit") == 303
+    assert expense_status(client, "Exact Limit") == ("approved" if is_final else "awaiting_finance")
+    if not is_final:
+        assert fake_payouts.webhooks == []
+        login(client, "emp-dana")
+        assert decide(client, "Exact Limit") == 303
+        assert expense_status(client, "Exact Limit") == "approved"
+    assert len(fake_payouts.webhooks) == 1
+    assert fake_payouts.webhooks[0]["data"]["amount_cents"] == usd_cents
 
 
 def test_large_expense_needs_finance(client: TestClient, fake_payouts: FakePayouts) -> None:
@@ -128,8 +155,27 @@ def test_webhook_matches_pinned_contract(client: TestClient, fake_payouts: FakeP
         assert sent[key] == pinned[key]
     for key, value in pinned["data"].items():
         assert type(sent["data"][key]) is type(value), key
+    assert pinned["data"]["amount_cents"] == 18_450
+    assert type(pinned["data"]["amount_cents"]) is int
     assert sent["data"]["amount_cents"] == 18_450
+    assert type(sent["data"]["amount_cents"]) is int
     assert sent["data"]["employee_id"] == "emp-jonah"
+
+
+@pytest.mark.parametrize(
+    "data", [{"amount_cents": 184.5}, {"amount_cents": 18450.0}, {"amount": 184.5}]
+)
+def test_payout_contract_rejects_decimal_amounts(
+    config: Config, fake_payouts: FakePayouts, data: dict[str, object]
+) -> None:
+    event = json.loads(CONTRACT_FIXTURE.read_text(encoding="utf-8"))
+    event["data"].pop("amount_cents", None)
+    event["data"].update(data)
+    payouts = PayoutsClient(config, httpx.MockTransport(fake_payouts.handler))
+    with pytest.raises(PayoutsUnavailable, match="returned 422"):
+        payouts.deliver(event)
+    assert fake_payouts.webhooks == []
+    assert fake_payouts.payouts == {}
 
 
 def test_payout_status_shown_after_approval(client: TestClient) -> None:
