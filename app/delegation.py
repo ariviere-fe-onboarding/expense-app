@@ -10,6 +10,11 @@ from sqlalchemy.orm import Session
 from app.models import Delegation, User
 
 
+def current_date() -> date:
+    """Return the date used to determine active approval coverage."""
+    return date.today()
+
+
 def covered_managers(session: Session, user: User, today: date) -> frozenset[str]:
     """Return the IDs of managers whose approvals this user is covering today."""
     rows = session.scalars(
