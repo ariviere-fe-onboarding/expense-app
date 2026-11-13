@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import RedirectResponse, Response
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app import policy, webhooks
 from app.delegation import covered_managers
@@ -62,6 +62,23 @@ def decide(
     if not policy.can_decide(user, expense, covering):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "You can't decide on this expense.")
 
+    observed = expense.status
+    outcome = (
+        policy.Decision(ExpenseStatus.REJECTED, is_final=False)
+        if decision == "reject"
+        else policy.approval_outcome(user, expense)
+    )
+    # Only the first decision based on this status may change the expense.
+    updated_id = session.scalar(
+        update(Expense)
+        .where(Expense.id == expense.id, Expense.status == observed)
+        .values(status=outcome.next_status)
+        .returning(Expense.id)
+    )
+    if updated_id is None:
+        session.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "This expense changed meanwhile.")
+
     session.add(
         Approval(
             expense_id=expense.id,
@@ -70,14 +87,7 @@ def decide(
             comment=comment.strip(),
         )
     )
-    delivery = None
-    if decision == "reject":
-        expense.status = ExpenseStatus.REJECTED
-    else:
-        outcome = policy.approval_outcome(user, expense)
-        expense.status = outcome.next_status
-        if outcome.is_final:
-            delivery = webhooks.enqueue(session, expense, user)
+    delivery = webhooks.enqueue(session, expense, user) if outcome.is_final else None
     session.commit()
 
     if delivery is not None:
