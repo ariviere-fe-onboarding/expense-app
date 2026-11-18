@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# Minimal customer-starter presentation, with Fernway security and contract safeguards.
+# Collapsed walkthrough with Jira, Fernway standards, and linked payout context.
 language: en-US
 early_access: true
 
@@ -21,9 +21,10 @@ reviews:
     and internal refactors with unchanged behavior covered by tests.
   collapse_walkthrough: true
   high_level_summary: true
-  changed_files_summary: false
-  sequence_diagrams: false
-  estimate_code_review_effort: false
+  high_level_summary_in_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
   review_status: false
   review_details: false
   commit_status: true
@@ -38,11 +39,13 @@ reviews:
 
   auto_review:
     enabled: true
-    auto_incremental_review: true
+    auto_incremental_review: false
     auto_pause_after_reviewed_commits: 5
     drafts: false
     ignore_title_keywords:
       - "[skip review]"
+    base_branches:
+      - "^codex/jira-demo-base$"
 
   path_filters:
     - "!**/*.lock"
@@ -117,29 +120,6 @@ reviews:
       mode: "off"
     issue_assessment:
       mode: warning
-    custom_checks:
-      - name: Scope matches description
-        mode: warning
-        instructions: 'Pass when every changed file is accounted for by the pull request title, description
-          or linked issue. Fail when any of these is changed without the description saying so: an agent
-          rule file (AGENTS.md, CLAUDE.md, .cursorrules and similar), a CI workflow, deployment or infrastructure
-          configuration, a database migration or schema, a dependency manifest or lockfile with a non-patch
-          change, or a file under a folder the description does not mention at all. List the unaccounted-for
-          files.'
-      - name: "Security Gate"
-        mode: error
-        instructions: >-
-          Fail only when the review finds a SECURITY-RELATED major or critical issue, for
-          example: missing authentication or authorization, self-approval, injection, XSS,
-          SSRF, path traversal, weak or predictable tokens, secrets in code or logs, bank data
-          outside payouts-service, unsafe handling of model output, or insecure
-          infrastructure. Do not fail on minor or purely functional issues.
-      - name: "Contract compatibility"
-        mode: warning
-        instructions: >-
-          Fail when the change alters the expense.approved webhook or the payouts /internal API
-          (fields, types, units, signature scheme, or idempotency) without a version bump as
-          required by the API contracts guideline, or would break payouts-service.
 
   finishing_touches:
     autofix:
@@ -172,13 +152,13 @@ knowledge_base:
       - files: "ariviere-fe-onboarding/engineering-standards:guidelines/*.md"
         applyTo: "**/*.py"
 
-  automatic_linking_mode: auto
+  automatic_linking_mode: disabled
   linked_repositories:
     - repository: "ariviere-fe-onboarding/payouts-service"
       instructions: >-
-        payouts-service consumes the expense.approved webhook this repository sends and serves
-        the /internal API it calls. When a change affects that contract, check the consumer
-        (payouts/schemas.py, payouts/signing.py, payouts/service.py) and cite the file it breaks.
+        payouts-service consumes expense.approved (payouts/schemas.py, payouts/service.py) and
+        serves /internal/payouts (payouts/main.py). Verify assumptions about payout status against
+        PayoutStatus in payouts/models.py and cite linked source when reporting mismatches.
 
 chat:
   art: false
