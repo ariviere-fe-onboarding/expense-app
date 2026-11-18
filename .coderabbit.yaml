@@ -140,13 +140,15 @@ reviews:
       - name: "Contract compatibility"
         mode: error
         instructions: >-
-          Use and report the linked payouts-service main ref as the contract baseline for this
-          demo. If the main ref cannot be verified, report an inconclusive result.
-          For changed /internal requests, verify HTTP method, path, and required inputs with
-          the linked handler. Fail if new code relies on response fields, types, units, or
-          statuses that the baseline cannot return. Check response construction and reachable
-          status assignments as well as the enum. Optional handling of additional statuses is
-          compatible when the baseline statuses still work. Independently fail if the change
+          Use the linked payouts-service default branch as the demo baseline. When the review
+          does not specify a linked ref, the default linked checkout may be reported as HEAD.
+          If a companion ref is specified, assess the existing default branch contract before
+          passing. For changed /internal calls, verify HTTP method, path, required request
+          inputs, and documented HTTP response codes with the linked handler. Fail when a
+          change relies on incompatible codes, fields, types, units, or lifecycle statuses.
+          Check response construction and reachable status assignments as well as the enum.
+          Optional handling of extra statuses is compatible when baseline statuses still work.
+          Independently fail if the change
           removes, renames, or retypes a webhook field or changes its units, signing, or
           idempotency semantics without the required version bump and migration window,
           even if the current consumer does not use the affected field. Cite the code or
