@@ -71,3 +71,31 @@ def test_reimbursement_detail_requires_expense_visibility(client: TestClient) ->
     approved = expense_id(client, "Brightline Rail")
 
     assert client.get(f"/expenses/{approved}").status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("unavailable_responses", "message"),
+    [
+        (1, "Payout failed · $1,234.09"),
+        (3, "Payout status is unavailable right now."),
+    ],
+)
+def test_reimbursement_retries_a_503_once(
+    client: TestClient, fake_payouts: FakePayouts, unavailable_responses: int, message: str
+) -> None:
+    """Make one retry and display its result, including another unavailable response."""
+    login(client, "emp-priya")
+    approved = expense_id(client, "Brightline Rail")
+    fake_payouts.payouts[approved] = {
+        "payout_id": 15,
+        "status": "failed",
+        "amount_cents": 123_409,
+        "currency": "USD",
+    }
+    fake_payouts.payout_status_failures = unavailable_responses
+
+    response = client.get(f"/expenses/{approved}")
+
+    assert response.status_code == 200
+    assert message in response.text
+    assert fake_payouts.payout_status_requests == 2
