@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# Minimal customer-starter presentation, with Fernway security and contract safeguards.
+# Collapsed walkthrough with Jira, Fernway standards, and payout compatibility checks.
 language: en-US
 early_access: true
 
@@ -21,9 +21,10 @@ reviews:
     and internal refactors with unchanged behavior covered by tests.
   collapse_walkthrough: true
   high_level_summary: true
-  changed_files_summary: false
-  sequence_diagrams: false
-  estimate_code_review_effort: false
+  high_level_summary_in_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
   review_status: false
   review_details: false
   commit_status: true
@@ -43,6 +44,8 @@ reviews:
     drafts: false
     ignore_title_keywords:
       - "[skip review]"
+    base_branches:
+      - "^codex/jira-demo-base$"
 
   path_filters:
     - "!**/*.lock"
@@ -135,11 +138,14 @@ reviews:
           outside payouts-service, unsafe handling of model output, or insecure
           infrastructure. Do not fail on minor or purely functional issues.
       - name: "Contract compatibility"
-        mode: warning
+        mode: error
         instructions: >-
-          Fail when the change alters the expense.approved webhook or the payouts /internal API
-          (fields, types, units, signature scheme, or idempotency) without a version bump as
-          required by the API contracts guideline, or would break payouts-service.
+          Fail when new Expense App code requires a field, type, unit, or lifecycle status that
+          the current payouts-service does not provide, or changes the expense.approved webhook
+          incompatibly. Compare the changed code against the linked repository, including its
+          response construction and status enum for /internal/payouts. Identify the incompatible
+          assumption and cite the producer or consumer source that establishes the contract.
+          Pass when the changed code works with the currently deployed contract.
 
   finishing_touches:
     autofix:
@@ -172,13 +178,13 @@ knowledge_base:
       - files: "ariviere-fe-onboarding/engineering-standards:guidelines/*.md"
         applyTo: "**/*.py"
 
-  automatic_linking_mode: auto
+  automatic_linking_mode: disabled
   linked_repositories:
     - repository: "ariviere-fe-onboarding/payouts-service"
       instructions: >-
-        payouts-service consumes the expense.approved webhook this repository sends and serves
-        the /internal API it calls. When a change affects that contract, check the consumer
-        (payouts/schemas.py, payouts/signing.py, payouts/service.py) and cite the file it breaks.
+        payouts-service consumes expense.approved (payouts/schemas.py, payouts/service.py) and
+        serves /internal/payouts (payouts/main.py). Verify assumptions about payout status against
+        PayoutStatus in payouts/models.py and cite linked source when reporting mismatches.
 
 chat:
   art: false
