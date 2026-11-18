@@ -33,6 +33,8 @@ class FakePayouts:
     secret: str
     token: str
     fail: bool = False
+    payout_status_failures: int = 0
+    payout_status_requests: int = 0
     webhooks: list[dict[str, Any]] = field(default_factory=list)
     payouts: dict[int, dict[str, Any]] = field(default_factory=dict)
     accounts: dict[str, dict[str, str]] = field(
@@ -49,6 +51,10 @@ class FakePayouts:
         if request.headers.get("authorization") != f"Bearer {self.token}":
             return httpx.Response(401)
         if request.url.path == "/internal/payouts":
+            self.payout_status_requests += 1
+            if self.payout_status_failures:
+                self.payout_status_failures -= 1
+                return httpx.Response(503)
             payout = self.payouts.get(int(request.url.params["expense_id"]))
             return httpx.Response(200, json=payout) if payout else httpx.Response(404)
         prefix, _, rest = request.url.path.partition("/internal/employees/")
