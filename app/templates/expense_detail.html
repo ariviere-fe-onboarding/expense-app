@@ -16,7 +16,9 @@
     <dt>Reimbursement</dt>
     <dd>
       {% if payout_error %}Payout status is unavailable right now.
-      {% elif payout %}{{ payout.status|replace("_", " ")|capitalize }} · {{ payout.amount_cents|cents(payout.currency) }}
+      {% elif payout %}
+        {{ payout.status|replace("_", " ")|capitalize }} · {{ payout_amount }}
+        {% if payout_hint %}<p>{{ payout_hint }}</p>{% endif %}
       {% else %}Not yet sent to payouts.{% endif %}
     </dd>
     {% endif %}

@@ -18,6 +18,11 @@ from app.receipts import MAX_RECEIPT_BYTES, ReceiptError, receipt_path, save_rec
 
 router = APIRouter()
 
+PAYOUT_STATUS_HINTS = {
+    "submitted": "Deposit complete. Your reimbursement is in your bank account.",
+    "needs_bank_account": "Add a bank account to receive your reimbursement.",
+}
+
 NOTICES = {
     "submitted": "Expense submitted for approval.",
     "approved": "Expense approved.",
@@ -142,6 +147,13 @@ def expense_detail(
             "expense": expense,
             "can_decide": policy.can_decide(user, expense),
             "payout": payout,
+            "payout_hint": PAYOUT_STATUS_HINTS.get(payout.status) if payout else None,
+            "payout_amount": (
+                f"{'$' if payout.currency == 'USD' else payout.currency + ' '}"
+                f"{payout.amount_cents / 100.0:,.2f}"
+                if payout
+                else None
+            ),
             "payout_error": payout_error,
             "notice": NOTICES.get(notice),
         },
