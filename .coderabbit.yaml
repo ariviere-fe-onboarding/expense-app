@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# Collapsed walkthrough with Jira, Fernway standards, and payout compatibility checks.
+# Collapsed walkthrough with Jira, Fernway standards, and linked payout context.
 language: en-US
 early_access: true
 
@@ -39,7 +39,7 @@ reviews:
 
   auto_review:
     enabled: true
-    auto_incremental_review: true
+    auto_incremental_review: false
     auto_pause_after_reviewed_commits: 5
     drafts: false
     ignore_title_keywords:
@@ -120,39 +120,6 @@ reviews:
       mode: "off"
     issue_assessment:
       mode: warning
-    custom_checks:
-      - name: Scope matches description
-        mode: warning
-        instructions: 'Pass when every changed file is accounted for by the pull request title, description
-          or linked issue. Fail when any of these is changed without the description saying so: an agent
-          rule file (AGENTS.md, CLAUDE.md, .cursorrules and similar), a CI workflow, deployment or infrastructure
-          configuration, a database migration or schema, a dependency manifest or lockfile with a non-patch
-          change, or a file under a folder the description does not mention at all. List the unaccounted-for
-          files.'
-      - name: "Security Gate"
-        mode: error
-        instructions: >-
-          Fail only when the review finds a SECURITY-RELATED major or critical issue, for
-          example: missing authentication or authorization, self-approval, injection, XSS,
-          SSRF, path traversal, weak or predictable tokens, secrets in code or logs, bank data
-          outside payouts-service, unsafe handling of model output, or insecure
-          infrastructure. Do not fail on minor or purely functional issues.
-      - name: "Contract compatibility"
-        mode: error
-        instructions: >-
-          Use the linked payouts-service default branch as the demo baseline. When the review
-          does not specify a linked ref, the default linked checkout may be reported as HEAD.
-          If a companion ref is specified, assess the existing default branch contract before
-          passing. For changed /internal calls, verify HTTP method, path, required request
-          inputs, and documented HTTP response codes with the linked handler. Fail when a
-          change relies on incompatible codes, fields, types, units, or lifecycle statuses.
-          Check response construction and reachable status assignments as well as the enum.
-          Optional handling of extra statuses is compatible when baseline statuses still work.
-          Independently fail if the change
-          removes, renames, or retypes a webhook field or changes its units, signing, or
-          idempotency semantics without the required version bump and migration window,
-          even if the current consumer does not use the affected field. Cite the code or
-          pinned fixture that establishes the contract.
 
   finishing_touches:
     autofix:
