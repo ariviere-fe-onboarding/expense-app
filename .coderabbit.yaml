@@ -140,12 +140,14 @@ reviews:
       - name: "Contract compatibility"
         mode: error
         instructions: >-
-          Fail when new Expense App code requires a field, type, unit, or lifecycle status that
-          the current payouts-service does not provide, or changes the expense.approved webhook
-          incompatibly. Compare the changed code against the linked repository, including its
-          response construction and status enum for /internal/payouts. Identify the incompatible
-          assumption and cite the producer or consumer source that establishes the contract.
-          Pass when the changed code works with the currently deployed contract.
+          Use the linked payouts-service main branch as the contract baseline for this demo.
+          Fail when new Expense App code requires a response field, type, unit, or lifecycle
+          status that the baseline does not provide. For /internal/payouts, compare the change
+          with the response construction and status enum. Independently fail if the change
+          removes, renames, or retypes a webhook field or changes its units, signing, or
+          idempotency semantics without the required version bump and migration window,
+          even if the current consumer does not use the affected field. Cite the code or
+          pinned fixture that establishes the contract.
 
   finishing_touches:
     autofix:
