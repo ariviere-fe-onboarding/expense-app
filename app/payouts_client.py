@@ -59,6 +59,7 @@ class PayoutsClient:
         )
 
     def _internal_get(self, path: str, params: dict[str, str] | None = None) -> httpx.Response:
+        """Fetch an internal resource from the configured payouts origin."""
         headers = {"authorization": f"Bearer {self.config.payouts_service_token}"}
         try:
             with self._client() as client:
@@ -82,8 +83,11 @@ class PayoutsClient:
             raise PayoutsUnavailable(f"payouts-service returned {response.status_code}")
 
     def payout_status(self, expense_id: int) -> PayoutStatus | None:
-        """Return the payout for an expense, or None if none exists yet."""
-        response = self._internal_get("/internal/payouts", {"expense_id": str(expense_id)})
+        """Fetch a payout, retrying a temporarily unavailable status response once."""
+        params = {"expense_id": str(expense_id)}
+        response = self._internal_get("/internal/payouts", params)
+        if response.status_code == 503:
+            response = self._internal_get("/internal/payouts", params)
         if response.status_code == 404:
             return None
         return self._parse(response, PayoutStatus)
