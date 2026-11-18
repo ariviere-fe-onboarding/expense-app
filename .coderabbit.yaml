@@ -140,10 +140,13 @@ reviews:
       - name: "Contract compatibility"
         mode: error
         instructions: >-
-          Use the linked payouts-service main branch as the contract baseline for this demo.
-          Fail when new Expense App code requires a response field, type, unit, or lifecycle
-          status that the baseline does not provide. For /internal/payouts, compare the change
-          with the response construction and status enum. Independently fail if the change
+          Use and report the linked payouts-service main ref as the contract baseline for this
+          demo. If the main ref cannot be verified, report an inconclusive result.
+          For changed /internal requests, verify HTTP method, path, and required inputs with
+          the linked handler. Fail if new code relies on response fields, types, units, or
+          statuses that the baseline cannot return. Check response construction and reachable
+          status assignments as well as the enum. Optional handling of additional statuses is
+          compatible when the baseline statuses still work. Independently fail if the change
           removes, renames, or retypes a webhook field or changes its units, signing, or
           idempotency semantics without the required version bump and migration window,
           even if the current consumer does not use the affected field. Cite the code or
