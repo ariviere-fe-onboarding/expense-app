@@ -136,7 +136,7 @@ def test_payout_status_shown_after_approval(client: TestClient) -> None:
     login(client, "emp-lena")
     decide(client, "Cedar & Salt")
     page = client.get(f"/expenses/{expense_id(client, 'Cedar & Salt')}").text
-    assert "Submitted · $184.50" in page
+    assert "Submitted for processing · $184.50" in page
 
 
 def test_payouts_outage_keeps_approval_and_retries(

@@ -18,6 +18,12 @@ from app.receipts import MAX_RECEIPT_BYTES, ReceiptError, receipt_path, save_rec
 
 router = APIRouter()
 
+PAYOUT_STATUS_LABELS = {
+    "submitted": "Submitted for processing",
+    "needs_bank_account": "Bank account required",
+    "failed": "Payout failed",
+}
+
 NOTICES = {
     "submitted": "Expense submitted for approval.",
     "approved": "Expense approved.",
@@ -142,6 +148,13 @@ def expense_detail(
             "expense": expense,
             "can_decide": policy.can_decide(user, expense),
             "payout": payout,
+            "payout_label": (
+                PAYOUT_STATUS_LABELS.get(
+                    payout.status, payout.status.replace("_", " ").capitalize()
+                )
+                if payout
+                else None
+            ),
             "payout_error": payout_error,
             "notice": NOTICES.get(notice),
         },
