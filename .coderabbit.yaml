@@ -123,9 +123,9 @@ reviews:
 
   finishing_touches:
     autofix:
-      enabled: false
+      enabled: true
     fix_ci:
-      enabled: false
+      enabled: true
     docstrings:
       enabled: false
     unit_tests:
@@ -157,8 +157,9 @@ knowledge_base:
     - repository: "ariviere-fe-onboarding/payouts-service"
       instructions: >-
         payouts-service consumes expense.approved (payouts/schemas.py, payouts/service.py) and
-        serves /internal/payouts (payouts/main.py). Verify assumptions about payout status against
-        PayoutStatus in payouts/models.py and cite linked source when reporting mismatches.
+        serves /internal/payouts (payouts/main.py). Compare user-facing payout status messages
+        with the real lifecycle in payouts/service.py and the PayoutStatus enum in
+        payouts/models.py. Cite the producer file that establishes any mismatch.
 
 chat:
   art: false
