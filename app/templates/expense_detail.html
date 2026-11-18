@@ -17,7 +17,7 @@
     <dd>
       {% if payout_error %}Payout status is unavailable right now.
       {% elif payout %}{{ payout_label }} · {{ payout_amount }}
-      {% else %}Not yet sent to payouts.{% endif %}
+      {% endif %}
     </dd>
     {% endif %}
   </dl>

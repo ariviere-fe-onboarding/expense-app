@@ -35,22 +35,16 @@ def test_reimbursement_labels(
     assert f"{label} · $1,234.09" in response.text
 
 
-@pytest.mark.parametrize(
-    ("payouts_unavailable", "message"),
-    [(False, "Not yet sent to payouts."), (True, "Payout status is unavailable right now.")],
-)
-def test_reimbursement_fallback(
-    client: TestClient, fake_payouts: FakePayouts, payouts_unavailable: bool, message: str
-) -> None:
-    """Tell a missing payout apart from an unavailable service."""
+def test_reimbursement_service_unavailable(client: TestClient, fake_payouts: FakePayouts) -> None:
+    """Tell the viewer when the payout service is unavailable."""
     login(client, "emp-priya")
     approved = expense_id(client, "Brightline Rail")
-    fake_payouts.fail = payouts_unavailable
+    fake_payouts.fail = True
 
     response = client.get(f"/expenses/{approved}")
 
     assert response.status_code == 200
-    assert message in response.text
+    assert "Payout status is unavailable right now." in response.text
 
 
 def test_reimbursement_is_hidden_on_unapproved_expense(client: TestClient) -> None:
@@ -70,3 +64,31 @@ def test_reimbursement_detail_requires_expense_visibility(client: TestClient) ->
     approved = expense_id(client, "Brightline Rail")
 
     assert client.get(f"/expenses/{approved}").status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("unavailable_responses", "message"),
+    [
+        (1, "Payout failed · $1,234.09"),
+        (3, "Payout status is unavailable right now."),
+    ],
+)
+def test_reimbursement_retries_a_503_once(
+    client: TestClient, fake_payouts: FakePayouts, unavailable_responses: int, message: str
+) -> None:
+    """Make one retry and display its result, including another unavailable response."""
+    login(client, "emp-priya")
+    approved = expense_id(client, "Brightline Rail")
+    fake_payouts.payouts[approved] = {
+        "payout_id": 15,
+        "status": "failed",
+        "amount_cents": 123_409,
+        "currency": "USD",
+    }
+    fake_payouts.payout_status_failures = unavailable_responses
+
+    response = client.get(f"/expenses/{approved}")
+
+    assert response.status_code == 200
+    assert message in response.text
+    assert fake_payouts.payout_status_requests == 2

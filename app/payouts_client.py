@@ -82,8 +82,11 @@ class PayoutsClient:
             raise PayoutsUnavailable(f"payouts-service returned {response.status_code}")
 
     def payout_status(self, expense_id: int) -> PayoutStatus | None:
-        """Return the payout for an expense, or None if none exists yet."""
-        response = self._internal_get("/internal/payouts", {"expense_id": str(expense_id)})
+        """Fetch a payout, retrying a temporarily unavailable status response once."""
+        params = {"expense_id": str(expense_id)}
+        response = self._internal_get("/internal/payouts", params)
+        if response.status_code == 503:
+            response = self._internal_get("/internal/payouts", params)
         if response.status_code == 404:
             return None
         return self._parse(response, PayoutStatus)
